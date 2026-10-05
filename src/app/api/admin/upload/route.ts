@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/auth";
-import { uploadFile } from "@/lib/blob";
+import { proxyUrl, uploadFile } from "@/lib/blob";
 
 const MAX_SIZE = 8 * 1024 * 1024; // 8 MB
 const ALLOWED = new Set(["image/png", "image/jpeg", "image/webp", "image/gif"]);
@@ -25,6 +25,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "too_large" }, { status: 413 });
   }
 
-  const res = await uploadFile(`plugins/${file.name}`, file, "public");
-  return NextResponse.json({ url: res.url });
+  const res = await uploadFile(`plugins/${file.name}`, file, "private");
+  return NextResponse.json({ url: proxyUrl(res.url) });
 }

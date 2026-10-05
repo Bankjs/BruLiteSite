@@ -5,7 +5,7 @@ import { db } from "@/lib/db/client";
 import { tickets } from "@/lib/db/schema";
 import { getSession } from "@/lib/auth";
 import { postTicketToDiscord } from "@/lib/discord";
-import { uploadFile } from "@/lib/blob";
+import { proxyUrl, uploadFile } from "@/lib/blob";
 import { rateLimit } from "@/lib/rate-limit";
 
 const createSchema = z.object({
@@ -67,7 +67,8 @@ export async function POST(req: Request) {
     );
   }
 
-  // Optional screenshot — uploaded to public blob so Discord can embed it.
+  // Optional screenshot — private blob, exposed via /api/blob proxy URL so
+  // Discord and <img> tags can fetch it.
   let imageUrl: string | null = null;
   const file = form.get("image");
   if (file instanceof File && file.size > 0) {
@@ -78,8 +79,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "image_too_large" }, { status: 413 });
     }
     try {
-      const blob = await uploadFile(`tickets/${file.name}`, file, "public");
-      imageUrl = blob.url;
+      const blob = await uploadFile(`tickets/${file.name}`, file, "private");
+      imageUrl = proxyUrl(blob.url);
     } catch (e) {
       console.error("ticket image upload failed", e);
       // Fail rather than silently drop evidence the user expected to attach.
