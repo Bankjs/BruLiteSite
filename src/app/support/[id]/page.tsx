@@ -4,6 +4,7 @@ import { db } from "@/lib/db/client";
 import { tickets } from "@/lib/db/schema";
 import { getSession } from "@/lib/auth";
 import { Badge, Card } from "@/components/ui";
+import { env } from "@/lib/env";
 import { notFound, redirect } from "next/navigation";
 
 export const metadata = { title: "Ticket" };
@@ -48,8 +49,16 @@ export default async function TicketPage({
         </p>
         {ticket.discordMessageId && (
           <p className="mt-6 border-t border-border pt-4 text-xs text-muted">
-            This ticket was posted to the BruLite Discord — staff will respond
-            there or update the status here.
+            This ticket has a thread on the BruLite Discord — add evidence or
+            follow the discussion there.
+            <a
+              href={`https://discord.com/channels/${env.DISCORD_GUILD_ID}/${ticket.discordMessageId}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="ml-2 text-accent underline"
+            >
+              Open Discord thread →
+            </a>
           </p>
         )}
       </Card>

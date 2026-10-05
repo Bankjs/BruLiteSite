@@ -32,12 +32,29 @@ Enable Discord **Developer Mode** (User Settings → Advanced) to copy IDs.
   - `Admin` (or reuse an existing staff role) → copy ID(s) → `DISCORD_ADMIN_ROLE_IDS` (comma-separated)
 - Right-click your server icon → **Copy Server ID** → `DISCORD_GUILD_ID`
 
-## 4. Tickets channel
+## 4. Tickets forum channel (preferred)
 
-Pick a staff channel for bug/feature posts, e.g. `#brulite-support`:
+Bug reports and feature requests become **forum posts** — customers can open
+the thread, add evidence, and reply; staff discuss in the same thread.
 
-- **Channel Settings → Integrations → Webhooks → New Webhook** → copy URL →
-  `DISCORD_TICKETS_WEBHOOK_URL`
+1. In your server: **Create Channel → Forum** — e.g. `#brulite-support`.
+2. **Permissions** (channel settings → Permissions):
+   - `@everyone`: deny View Channel
+   - `Customer` (and any member roles): **View Channel** + **Send Messages in
+     Posts**, but **not** Create Posts (only the bot creates threads)
+   - `Admin`/staff: as above + manage permissions as needed
+3. Optional: create forum tags `Bug` and `Feature`, copy their IDs
+   (right-click the tag when editing, or via API) →
+   `DISCORD_TICKETS_TAG_BUG` / `DISCORD_TICKETS_TAG_FEATURE`
+4. Right-click the forum channel → **Copy Channel ID** →
+   `DISCORD_TICKETS_FORUM_ID`
+
+Note: threads are visible to everyone who can see the channel — so staff
+comments in a ticket thread are customer-visible by design.
+
+**Fallback:** if `DISCORD_TICKETS_FORUM_ID` is unset, tickets are posted via
+channel webhook instead — Channel Settings → Integrations → Webhooks →
+New Webhook → `DISCORD_TICKETS_WEBHOOK_URL`.
 
 ## 5. How it fits together
 

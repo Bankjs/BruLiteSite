@@ -145,8 +145,80 @@ export function buildOAuthUrl(state: string): string {
   return `https://discord.com/oauth2/authorize?${params.toString()}`;
 }
 
-/** Post a new ticket to the staff channel via Discord webhook. */
+/**
+ * Post a new ticket to Discord. Preferred path: create a forum post (thread)
+ * in the tickets forum channel — customers can reply with evidence and staff
+ * discuss in-thread. Falls back to a channel webhook message when no forum
+ * is configured. Returns the thread/message ID, or null.
+ */
 export async function postTicketToDiscord(args: {
+  ticketId: string;
+  type: "bug" | "feature";
+  title: string;
+  body: string;
+  username: string;
+}): Promise<string | null> {
+  const forumId = env.DISCORD_TICKETS_FORUM_ID;
+  if (forumId) return postTicketForumThread(forumId, args);
+  return postTicketWebhook(args);
+}
+
+function ticketEmbed(args: {
+  ticketId: string;
+  type: "bug" | "feature";
+  title: string;
+  body: string;
+  username: string;
+}) {
+  return {
+    title: `${args.type === "bug" ? "🐛 Bug" : "💡 Feature"}: ${args.title}`,
+    description: args.body.slice(0, 4000),
+    color: args.type === "bug" ? 0xef4444 : 0x8b5cf6,
+    fields: [
+      { name: "Ticket", value: args.ticketId, inline: true },
+      { name: "From", value: args.username, inline: true },
+    ],
+    url: `${env.APP_URL}/admin/tickets`,
+  };
+}
+
+async function postTicketForumThread(
+  forumId: string,
+  args: {
+    ticketId: string;
+    type: "bug" | "feature";
+    title: string;
+    body: string;
+    username: string;
+  }
+): Promise<string | null> {
+  try {
+    const tag =
+      args.type === "bug"
+        ? env.DISCORD_TICKETS_TAG_BUG
+        : env.DISCORD_TICKETS_TAG_FEATURE;
+    const res = await fetch(`${API}/channels/${forumId}/threads`, {
+      method: "POST",
+      headers: botHeaders(),
+      body: JSON.stringify({
+        name: `${args.type === "bug" ? "[Bug]" : "[Feature]"} ${args.title}`.slice(0, 100),
+        applied_tags: tag ? [tag] : [],
+        message: { embeds: [ticketEmbed(args)] },
+      }),
+    });
+    if (!res.ok) {
+      console.error("forum thread failed", res.status, await res.text());
+      return null;
+    }
+    const thread = (await res.json()) as { id?: string };
+    return thread.id ?? null;
+  } catch (e) {
+    console.error("forum thread error", e);
+    return null;
+  }
+}
+
+async function postTicketWebhook(args: {
   ticketId: string;
   type: "bug" | "feature";
   title: string;
@@ -161,18 +233,7 @@ export async function postTicketToDiscord(args: {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         username: "BruLite Support",
-        embeds: [
-          {
-            title: `${args.type === "bug" ? "🐛 Bug" : "💡 Feature"}: ${args.title}`,
-            description: args.body.slice(0, 4000),
-            color: args.type === "bug" ? 0xef4444 : 0x8b5cf6,
-            fields: [
-              { name: "Ticket", value: args.ticketId, inline: true },
-              { name: "From", value: args.username, inline: true },
-            ],
-            url: `${env.APP_URL}/admin/tickets`,
-          },
-        ],
+        embeds: [ticketEmbed(args)],
       }),
     });
     if (!res.ok) {

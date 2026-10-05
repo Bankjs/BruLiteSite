@@ -43,9 +43,20 @@ export const env = {
       .map((s) => s.trim())
       .filter(Boolean);
   },
-  /** Channel webhook used to post new tickets to Discord. */
+  /** Channel webhook used to post new tickets to Discord (fallback). */
   get DISCORD_TICKETS_WEBHOOK_URL() {
     return opt("DISCORD_TICKETS_WEBHOOK_URL");
+  },
+  /** Forum channel ID — tickets become forum posts/threads when set. */
+  get DISCORD_TICKETS_FORUM_ID() {
+    return opt("DISCORD_TICKETS_FORUM_ID");
+  },
+  /** Optional forum tag IDs for ticket types. */
+  get DISCORD_TICKETS_TAG_BUG() {
+    return opt("DISCORD_TICKETS_TAG_BUG");
+  },
+  get DISCORD_TICKETS_TAG_FEATURE() {
+    return opt("DISCORD_TICKETS_TAG_FEATURE");
   },
   get STRIPE_SECRET_KEY() {
     return req("STRIPE_SECRET_KEY");
