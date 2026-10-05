@@ -82,6 +82,11 @@ export async function POST(req: Request) {
       imageUrl = blob.url;
     } catch (e) {
       console.error("ticket image upload failed", e);
+      // Fail rather than silently drop evidence the user expected to attach.
+      return NextResponse.json(
+        { error: "image_upload_failed" },
+        { status: 502 }
+      );
     }
   }
 

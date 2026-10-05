@@ -133,6 +133,17 @@ export function memberIsAdmin(member: DiscordMember | null): boolean {
   return member.roles.some((r) => adminIds.has(r));
 }
 
+/** Delete a channel or thread (e.g. a ticket thread when the ticket is deleted). */
+export async function deleteChannelOrThread(id: string): Promise<void> {
+  const res = await fetch(`${API}/channels/${id}`, {
+    method: "DELETE",
+    headers: botHeaders(),
+  });
+  if (!res.ok && res.status !== 404) {
+    console.error("deleteChannel failed", res.status, await res.text());
+  }
+}
+
 export function buildOAuthUrl(state: string): string {
   const params = new URLSearchParams({
     client_id: env.DISCORD_CLIENT_ID,

@@ -39,7 +39,9 @@ export function TicketForm() {
               ? "Images must be PNG, JPG, WebP or GIF."
               : data.error === "image_too_large"
                 ? "Image too large — 8 MB max."
-                : "Couldn't create the ticket — check the fields and try again."
+                : data.error === "image_upload_failed"
+                  ? "Image upload failed — remove it or try again."
+                  : "Couldn't create the ticket — check the fields and try again."
         );
         return;
       }

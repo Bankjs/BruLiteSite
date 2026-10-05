@@ -3,6 +3,7 @@ import { db } from "@/lib/db/client";
 import { tickets, users } from "@/lib/db/schema";
 import { Badge, Card, PageHeader } from "@/components/ui";
 import { TicketStatusSelect } from "@/components/admin-ticket-status";
+import { DeleteTicketButton } from "@/components/delete-ticket-button";
 
 export const metadata = { title: "Tickets" };
 export const dynamic = "force-dynamic";
@@ -50,7 +51,10 @@ export default async function AdminTicketsPage() {
                     {t.createdAt.toLocaleString("en-GB")}
                   </p>
                 </div>
-                <TicketStatusSelect ticketId={t.id} status={t.status} />
+                <div className="flex items-center gap-2">
+                  <TicketStatusSelect ticketId={t.id} status={t.status} />
+                  <DeleteTicketButton ticketId={t.id} />
+                </div>
               </div>
               <p className="mt-4 whitespace-pre-wrap text-sm text-muted">
                 {t.body}
