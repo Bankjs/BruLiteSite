@@ -185,8 +185,31 @@ function ticketEmbed(args: {
   };
 }
 
+async function fetchChannel(
+  channelId: string
+): Promise<{ id: string; type: number } | null> {
+  const res = await fetch(`${API}/channels/${channelId}`, {
+    headers: botHeaders(),
+  });
+  if (!res.ok) {
+    console.error("fetchChannel failed", res.status, await res.text());
+    return null;
+  }
+  return res.json();
+}
+
+function ticketThreadName(args: {
+  type: "bug" | "feature";
+  title: string;
+}): string {
+  return `${args.type === "bug" ? "[Bug]" : "[Feature]"} ${args.title}`.slice(
+    0,
+    100
+  );
+}
+
 async function postTicketForumThread(
-  forumId: string,
+  channelId: string,
   args: {
     ticketId: string;
     type: "bug" | "feature";
@@ -195,16 +218,20 @@ async function postTicketForumThread(
     username: string;
   }
 ): Promise<string | null> {
-  try {
+  const channel = await fetchChannel(channelId);
+  if (!channel) return null;
+
+  // 15 = forum, 16 = media — these take a `message` payload on creation.
+  if (channel.type === 15 || channel.type === 16) {
     const tag =
       args.type === "bug"
         ? env.DISCORD_TICKETS_TAG_BUG
         : env.DISCORD_TICKETS_TAG_FEATURE;
-    const res = await fetch(`${API}/channels/${forumId}/threads`, {
+    const res = await fetch(`${API}/channels/${channelId}/threads`, {
       method: "POST",
       headers: botHeaders(),
       body: JSON.stringify({
-        name: `${args.type === "bug" ? "[Bug]" : "[Feature]"} ${args.title}`.slice(0, 100),
+        name: ticketThreadName(args),
         applied_tags: tag ? [tag] : [],
         message: { embeds: [ticketEmbed(args)] },
       }),
@@ -215,10 +242,34 @@ async function postTicketForumThread(
     }
     const thread = (await res.json()) as { id?: string };
     return thread.id ?? null;
-  } catch (e) {
-    console.error("forum thread error", e);
+  }
+
+  // Text channel: post the embed first, then create a thread from it.
+  const msgRes = await fetch(`${API}/channels/${channelId}/messages`, {
+    method: "POST",
+    headers: botHeaders(),
+    body: JSON.stringify({ embeds: [ticketEmbed(args)] }),
+  });
+  if (!msgRes.ok) {
+    console.error("channel message failed", msgRes.status, await msgRes.text());
     return null;
   }
+  const msg = (await msgRes.json()) as { id: string };
+
+  const threadRes = await fetch(
+    `${API}/channels/${channelId}/messages/${msg.id}/threads`,
+    {
+      method: "POST",
+      headers: botHeaders(),
+      body: JSON.stringify({ name: ticketThreadName(args) }),
+    }
+  );
+  if (!threadRes.ok) {
+    console.error("message thread failed", threadRes.status, await threadRes.text());
+    return msg.id; // message posted even if threading failed
+  }
+  const thread = (await threadRes.json()) as { id?: string };
+  return thread.id ?? msg.id;
 }
 
 async function postTicketWebhook(args: {

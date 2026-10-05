@@ -32,28 +32,38 @@ Enable Discord **Developer Mode** (User Settings → Advanced) to copy IDs.
   - `Admin` (or reuse an existing staff role) → copy ID(s) → `DISCORD_ADMIN_ROLE_IDS` (comma-separated)
 - Right-click your server icon → **Copy Server ID** → `DISCORD_GUILD_ID`
 
-## 4. Tickets forum channel (preferred)
+## 4. Tickets channels
 
-Bug reports and feature requests become **forum posts** — customers can open
-the thread, add evidence, and reply; staff discuss in the same thread.
+Bug reports and feature requests become **threads** in Discord — customers can
+open the thread, add evidence, and reply; staff discuss in the same thread.
 
-1. In your server: **Create Channel → Forum** — e.g. `#brulite-support`.
+Two channel styles are supported — set the env vars that match yours:
+
+- **Forum channels** (recommended): each ticket is a forum post. Set
+  `DISCORD_TICKETS_FORUM_BUG` / `DISCORD_TICKETS_FORUM_FEATURE`
+  (or a shared `DISCORD_TICKETS_FORUM_ID`).
+- **Text channels**: the bot posts the ticket embed and creates a thread on
+  the message. Same env vars work — the channel type is detected at runtime.
+
+Setup:
+
+1. Create the channel(s) — e.g. `#bug-reports` and `#feature-requests`.
 2. **Permissions** (channel settings → Permissions):
    - `@everyone`: deny View Channel
-   - `Customer` (and any member roles): **View Channel** + **Send Messages in
-     Posts**, but **not** Create Posts (only the bot creates threads)
+   - `Customer` (and any member roles): **View Channel** + send messages in
+     threads/posts, but **not** Create Posts/Threads (only the bot creates
+     them)
    - `Admin`/staff: as above + manage permissions as needed
-3. Optional: create forum tags `Bug` and `Feature`, copy their IDs
-   (right-click the tag when editing, or via API) →
-   `DISCORD_TICKETS_TAG_BUG` / `DISCORD_TICKETS_TAG_FEATURE`
-4. Right-click the forum channel → **Copy Channel ID** →
-   `DISCORD_TICKETS_FORUM_ID`
+   - the **bot**: Send Messages + Create Posts/Threads
+3. Optional: for forum channels, create `Bug`/`Feature` tags and copy their
+   IDs → `DISCORD_TICKETS_TAG_BUG` / `DISCORD_TICKETS_TAG_FEATURE`
+4. Right-click each channel → **Copy Channel ID** → the env vars above
 
 Note: threads are visible to everyone who can see the channel — so staff
 comments in a ticket thread are customer-visible by design.
 
-**Fallback:** if `DISCORD_TICKETS_FORUM_ID` is unset, tickets are posted via
-channel webhook instead — Channel Settings → Integrations → Webhooks →
+**Fallback:** if no forum env var is set, tickets are posted via a channel
+webhook instead — Channel Settings → Integrations → Webhooks →
 New Webhook → `DISCORD_TICKETS_WEBHOOK_URL`.
 
 ## 5. How it fits together
