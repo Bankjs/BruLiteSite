@@ -14,6 +14,9 @@ export default async function AdminTicketsPage() {
       type: tickets.type,
       title: tickets.title,
       body: tickets.body,
+      steps: tickets.steps,
+      extra: tickets.extra,
+      imageUrl: tickets.imageUrl,
       status: tickets.status,
       createdAt: tickets.createdAt,
       username: users.username,
@@ -52,6 +55,26 @@ export default async function AdminTicketsPage() {
               <p className="mt-4 whitespace-pre-wrap text-sm text-muted">
                 {t.body}
               </p>
+              {t.steps && (
+                <p className="mt-3 whitespace-pre-wrap text-sm text-muted">
+                  <span className="font-medium text-foreground">Steps: </span>
+                  {t.steps}
+                </p>
+              )}
+              {t.extra && (
+                <p className="mt-3 whitespace-pre-wrap text-sm text-muted">
+                  <span className="font-medium text-foreground">Other info: </span>
+                  {t.extra}
+                </p>
+              )}
+              {t.imageUrl && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={t.imageUrl}
+                  alt="Attachment"
+                  className="mt-3 max-h-60 rounded-lg border border-border"
+                />
+              )}
             </Card>
           ))}
         </div>

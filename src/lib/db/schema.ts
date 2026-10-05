@@ -192,6 +192,9 @@ export const tickets = pgTable(
     type: text("type").notNull(), // bug | feature
     title: text("title").notNull(),
     body: text("body").notNull(),
+    steps: text("steps"), // steps to reproduce (bugs)
+    extra: text("extra"), // other info / evidence notes
+    imageUrl: text("image_url"), // uploaded screenshot
     status: text("status").notNull().default("open"), // open | in_progress | resolved | closed
     discordMessageId: text("discord_message_id"),
     createdAt: timestamp("created_at", { withTimezone: true })

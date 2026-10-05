@@ -47,6 +47,34 @@ export default async function TicketPage({
         <p className="mt-6 whitespace-pre-wrap text-sm text-muted">
           {ticket.body}
         </p>
+        {ticket.steps && (
+          <div className="mt-4">
+            <h3 className="text-xs font-semibold uppercase tracking-wide text-muted">
+              Steps to reproduce
+            </h3>
+            <p className="mt-1 whitespace-pre-wrap text-sm text-muted">
+              {ticket.steps}
+            </p>
+          </div>
+        )}
+        {ticket.extra && (
+          <div className="mt-4">
+            <h3 className="text-xs font-semibold uppercase tracking-wide text-muted">
+              Other info
+            </h3>
+            <p className="mt-1 whitespace-pre-wrap text-sm text-muted">
+              {ticket.extra}
+            </p>
+          </div>
+        )}
+        {ticket.imageUrl && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={ticket.imageUrl}
+            alt="Attached screenshot"
+            className="mt-4 max-h-80 rounded-lg border border-border"
+          />
+        )}
         {ticket.discordMessageId && (
           <p className="mt-6 border-t border-border pt-4 text-xs text-muted">
             This ticket has a thread on the BruLite Discord — add evidence or

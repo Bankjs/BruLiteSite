@@ -151,13 +151,20 @@ export function buildOAuthUrl(state: string): string {
  * discuss in-thread. Falls back to a channel webhook message when no forum
  * is configured. Returns the thread/message ID, or null.
  */
-export async function postTicketToDiscord(args: {
+export interface TicketPost {
   ticketId: string;
   type: "bug" | "feature";
   title: string;
   body: string;
   username: string;
-}): Promise<string | null> {
+  steps?: string | null;
+  extra?: string | null;
+  imageUrl?: string | null;
+}
+
+export async function postTicketToDiscord(
+  args: TicketPost
+): Promise<string | null> {
   const forumId =
     args.type === "bug"
       ? env.DISCORD_TICKETS_FORUM_BUG || env.DISCORD_TICKETS_FORUM_ID
@@ -166,21 +173,31 @@ export async function postTicketToDiscord(args: {
   return postTicketWebhook(args);
 }
 
-function ticketEmbed(args: {
-  ticketId: string;
-  type: "bug" | "feature";
-  title: string;
-  body: string;
-  username: string;
-}) {
+function ticketEmbed(args: TicketPost) {
+  const fields = [
+    { name: "Ticket", value: args.ticketId, inline: true },
+    { name: "From", value: args.username, inline: true },
+  ];
+  if (args.steps) {
+    fields.push({
+      name: "Steps to reproduce",
+      value: args.steps.slice(0, 1024),
+      inline: false,
+    });
+  }
+  if (args.extra) {
+    fields.push({
+      name: "Other info",
+      value: args.extra.slice(0, 1024),
+      inline: false,
+    });
+  }
   return {
     title: `${args.type === "bug" ? "🐛 Bug" : "💡 Feature"}: ${args.title}`,
     description: args.body.slice(0, 4000),
     color: args.type === "bug" ? 0xef4444 : 0x8b5cf6,
-    fields: [
-      { name: "Ticket", value: args.ticketId, inline: true },
-      { name: "From", value: args.username, inline: true },
-    ],
+    fields,
+    ...(args.imageUrl ? { image: { url: args.imageUrl } } : {}),
     url: `${env.APP_URL}/admin/tickets`,
   };
 }
@@ -198,10 +215,7 @@ async function fetchChannel(
   return res.json();
 }
 
-function ticketThreadName(args: {
-  type: "bug" | "feature";
-  title: string;
-}): string {
+function ticketThreadName(args: Pick<TicketPost, "type" | "title">): string {
   return `${args.type === "bug" ? "[Bug]" : "[Feature]"} ${args.title}`.slice(
     0,
     100
@@ -210,13 +224,7 @@ function ticketThreadName(args: {
 
 async function postTicketForumThread(
   channelId: string,
-  args: {
-    ticketId: string;
-    type: "bug" | "feature";
-    title: string;
-    body: string;
-    username: string;
-  }
+  args: TicketPost
 ): Promise<string | null> {
   const channel = await fetchChannel(channelId);
   if (!channel) return null;
@@ -272,13 +280,9 @@ async function postTicketForumThread(
   return thread.id ?? msg.id;
 }
 
-async function postTicketWebhook(args: {
-  ticketId: string;
-  type: "bug" | "feature";
-  title: string;
-  body: string;
-  username: string;
-}): Promise<string | null> {
+async function postTicketWebhook(
+  args: TicketPost
+): Promise<string | null> {
   const webhook = env.DISCORD_TICKETS_WEBHOOK_URL;
   if (!webhook) return null;
   try {
