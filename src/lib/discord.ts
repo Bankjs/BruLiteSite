@@ -1,0 +1,188 @@
+import { env } from "@/lib/env";
+
+const API = "https://discord.com/api/v10";
+
+function botHeaders() {
+  return {
+    Authorization: `Bot ${env.DISCORD_BOT_TOKEN}`,
+    "Content-Type": "application/json",
+  };
+}
+
+export interface DiscordUser {
+  id: string;
+  username: string;
+  global_name?: string | null;
+  avatar?: string | null;
+  email?: string | null;
+}
+
+export interface DiscordMember {
+  roles: string[];
+  user?: DiscordUser;
+}
+
+/** Exchange an OAuth2 code for an access token. */
+export async function exchangeCode(code: string): Promise<{
+  access_token: string;
+  token_type: string;
+}> {
+  const res = await fetch(`${API}/oauth2/token`, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      client_id: env.DISCORD_CLIENT_ID,
+      client_secret: env.DISCORD_CLIENT_SECRET,
+      grant_type: "authorization_code",
+      code,
+      redirect_uri: `${env.APP_URL}/api/auth/callback/discord`,
+    }),
+  });
+  if (!res.ok) throw new Error(`Discord token exchange failed: ${res.status}`);
+  return res.json();
+}
+
+/** Fetch the authed user's Discord profile using their OAuth access token. */
+export async function fetchDiscordUser(
+  accessToken: string
+): Promise<DiscordUser> {
+  const res = await fetch(`${API}/users/@me`, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+  if (!res.ok) throw new Error(`Discord @me failed: ${res.status}`);
+  return res.json();
+}
+
+/**
+ * Add the user to the BruLite guild via their OAuth access token
+ * (requires the `guilds.join` scope).
+ */
+export async function joinGuild(
+  discordUserId: string,
+  accessToken: string
+): Promise<boolean> {
+  const res = await fetch(
+    `${API}/guilds/${env.DISCORD_GUILD_ID}/members/${discordUserId}`,
+    {
+      method: "PUT",
+      headers: botHeaders(),
+      body: JSON.stringify({ access_token: accessToken }),
+    }
+  );
+  // 201 = joined, 204 = already a member
+  if (res.status === 201 || res.status === 204) return true;
+  console.error("joinGuild failed", res.status, await res.text());
+  return false;
+}
+
+/** Get a guild member (bot token). Returns null when not a member. */
+export async function getGuildMember(
+  discordUserId: string
+): Promise<DiscordMember | null> {
+  const res = await fetch(
+    `${API}/guilds/${env.DISCORD_GUILD_ID}/members/${discordUserId}`,
+    { headers: botHeaders(), cache: "no-store" }
+  );
+  if (res.status === 404) return null;
+  if (!res.ok) {
+    console.error("getGuildMember failed", res.status);
+    return null;
+  }
+  return res.json();
+}
+
+export async function isGuildMember(discordUserId: string): Promise<boolean> {
+  return (await getGuildMember(discordUserId)) !== null;
+}
+
+/** Add a role to a guild member (e.g. the Customer role on purchase). */
+export async function addGuildRole(
+  discordUserId: string,
+  roleId: string
+): Promise<boolean> {
+  const res = await fetch(
+    `${API}/guilds/${env.DISCORD_GUILD_ID}/members/${discordUserId}/roles/${roleId}`,
+    { method: "PUT", headers: botHeaders() }
+  );
+  if (!res.ok) {
+    console.error("addGuildRole failed", res.status, await res.text());
+    return false;
+  }
+  return true;
+}
+
+export async function removeGuildRole(
+  discordUserId: string,
+  roleId: string
+): Promise<boolean> {
+  const res = await fetch(
+    `${API}/guilds/${env.DISCORD_GUILD_ID}/members/${discordUserId}/roles/${roleId}`,
+    { method: "DELETE", headers: botHeaders() }
+  );
+  if (!res.ok && res.status !== 404) {
+    console.error("removeGuildRole failed", res.status, await res.text());
+    return false;
+  }
+  return true;
+}
+
+/** Does this member hold any of the configured admin roles? */
+export function memberIsAdmin(member: DiscordMember | null): boolean {
+  if (!member) return false;
+  const adminIds = new Set(env.DISCORD_ADMIN_ROLE_IDS);
+  return member.roles.some((r) => adminIds.has(r));
+}
+
+export function buildOAuthUrl(state: string): string {
+  const params = new URLSearchParams({
+    client_id: env.DISCORD_CLIENT_ID,
+    redirect_uri: `${env.APP_URL}/api/auth/callback/discord`,
+    response_type: "code",
+    scope: "identify email guilds guilds.join",
+    state,
+    prompt: "consent",
+  });
+  return `https://discord.com/oauth2/authorize?${params.toString()}`;
+}
+
+/** Post a new ticket to the staff channel via Discord webhook. */
+export async function postTicketToDiscord(args: {
+  ticketId: string;
+  type: "bug" | "feature";
+  title: string;
+  body: string;
+  username: string;
+}): Promise<string | null> {
+  const webhook = env.DISCORD_TICKETS_WEBHOOK_URL;
+  if (!webhook) return null;
+  try {
+    const res = await fetch(`${webhook}?wait=true`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        username: "BruLite Support",
+        embeds: [
+          {
+            title: `${args.type === "bug" ? "🐛 Bug" : "💡 Feature"}: ${args.title}`,
+            description: args.body.slice(0, 4000),
+            color: args.type === "bug" ? 0xef4444 : 0x8b5cf6,
+            fields: [
+              { name: "Ticket", value: args.ticketId, inline: true },
+              { name: "From", value: args.username, inline: true },
+            ],
+            url: `${env.APP_URL}/admin/tickets`,
+          },
+        ],
+      }),
+    });
+    if (!res.ok) {
+      console.error("ticket webhook failed", res.status, await res.text());
+      return null;
+    }
+    const data = (await res.json()) as { id?: string };
+    return data.id ?? null;
+  } catch (e) {
+    console.error("ticket webhook error", e);
+    return null;
+  }
+}
