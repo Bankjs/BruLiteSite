@@ -158,7 +158,10 @@ export async function postTicketToDiscord(args: {
   body: string;
   username: string;
 }): Promise<string | null> {
-  const forumId = env.DISCORD_TICKETS_FORUM_ID;
+  const forumId =
+    args.type === "bug"
+      ? env.DISCORD_TICKETS_FORUM_BUG || env.DISCORD_TICKETS_FORUM_ID
+      : env.DISCORD_TICKETS_FORUM_FEATURE || env.DISCORD_TICKETS_FORUM_ID;
   if (forumId) return postTicketForumThread(forumId, args);
   return postTicketWebhook(args);
 }

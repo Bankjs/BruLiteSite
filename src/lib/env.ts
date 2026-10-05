@@ -47,9 +47,16 @@ export const env = {
   get DISCORD_TICKETS_WEBHOOK_URL() {
     return opt("DISCORD_TICKETS_WEBHOOK_URL");
   },
-  /** Forum channel ID — tickets become forum posts/threads when set. */
+  /** Forum channel IDs — tickets become forum posts/threads when set.
+      Per-type channels take precedence over the shared one. */
   get DISCORD_TICKETS_FORUM_ID() {
     return opt("DISCORD_TICKETS_FORUM_ID");
+  },
+  get DISCORD_TICKETS_FORUM_BUG() {
+    return opt("DISCORD_TICKETS_FORUM_BUG");
+  },
+  get DISCORD_TICKETS_FORUM_FEATURE() {
+    return opt("DISCORD_TICKETS_FORUM_FEATURE");
   },
   /** Optional forum tag IDs for ticket types. */
   get DISCORD_TICKETS_TAG_BUG() {
