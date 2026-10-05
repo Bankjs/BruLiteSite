@@ -24,6 +24,7 @@ export const stripeProvider: PaymentProvider = {
   }) {
     const stripe = getStripe();
     const session = await stripe.checkout.sessions.create({
+      ui_mode: "hosted_page",
       mode: "subscription",
       line_items: [{ price: stripePriceId, quantity: 1 }],
       customer: stripeCustomerId ?? undefined,
@@ -33,7 +34,23 @@ export const stripeProvider: PaymentProvider = {
       subscription_data: { metadata: { userId } },
       success_url: successUrl,
       cancel_url: cancelUrl,
-      allow_promotion_codes: true,
+      billing_address_collection: "auto",
+      phone_number_collection: { enabled: false },
+      automatic_tax: { enabled: false },
+      allow_promotion_codes: false,
+      payment_method_collection: "always",
+      submit_type: "auto",
+      consent_collection: { terms_of_service: "required" },
+      payment_method_options: {
+        card: {
+          restrictions: {
+            brands_blocked: ["american_express", "discover_global_network"],
+          },
+        },
+      },
+      saved_payment_method_options: { payment_method_save: "enabled" },
+      integration_identifier: "hosted_web_0001",
+      origin_context: "web",
     });
     return { url: session.url! };
   },
