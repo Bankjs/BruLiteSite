@@ -1,6 +1,12 @@
+import Link from "next/link";
+import { ArrowRight } from "lucide-react";
 import { Card, PageHeader } from "@/components/ui";
+import { FaqAccordion } from "@/components/faq-accordion";
+import { Reveal } from "@/components/reveal";
+import { getSession } from "@/lib/auth";
 
 export const metadata = { title: "FAQ" };
+export const dynamic = "force-dynamic";
 
 const faqs = [
   {
@@ -33,18 +39,37 @@ const faqs = [
   },
 ];
 
-export default function FaqPage() {
+export default async function FaqPage() {
+  const session = await getSession();
+
   return (
-    <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6">
-      <PageHeader title="Frequently asked questions" />
-      <div className="space-y-4">
-        {faqs.map((f) => (
-          <Card key={f.q}>
-            <h3 className="font-semibold">{f.q}</h3>
-            <p className="mt-2 text-sm text-muted">{f.a}</p>
-          </Card>
-        ))}
-      </div>
+    <div className="mx-auto max-w-3xl px-4 py-16 sm:px-6">
+      <PageHeader
+        centered
+        eyebrow="Support"
+        title="Frequently asked questions"
+        subtitle="Everything about membership, the client, and how support works."
+      />
+      <Reveal>
+        <FaqAccordion items={faqs} />
+      </Reveal>
+
+      <Reveal delay={150}>
+        <Card className="mt-10 flex flex-col items-center gap-3 py-8 text-center">
+          <p className="font-medium">Still stuck?</p>
+          <p className="max-w-md text-sm text-muted">
+            Open a ticket and it lands straight in our Discord — attach a
+            screenshot and the team can reply in the thread.
+          </p>
+          <Link
+            href={session ? "/support" : "/api/auth/discord?next=/support"}
+            className="mt-2 inline-flex items-center gap-2 rounded-lg bg-gradient-to-b from-primary-bright to-primary px-5 py-2.5 text-sm font-medium text-white shadow-lg shadow-primary/30 transition-all hover:brightness-110"
+          >
+            {session ? "Go to Support" : "Sign in to open a ticket"}{" "}
+            <ArrowRight className="h-4 w-4" />
+          </Link>
+        </Card>
+      </Reveal>
     </div>
   );
 }

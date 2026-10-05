@@ -2,66 +2,45 @@ import Link from "next/link";
 import Image from "next/image";
 import { getSession, avatarUrl } from "@/lib/auth";
 import { SignOutButton } from "@/components/sign-out-button";
-
-const links = [
-  { href: "/plugins", label: "Plugins" },
-  { href: "/pricing", label: "Pricing" },
-  { href: "/faq", label: "FAQ" },
-];
+import { NavLinks, type NavLink } from "@/components/nav-links";
+import { MobileMenu } from "@/components/mobile-menu";
 
 export async function SiteNav() {
   const session = await getSession();
 
+  const links: NavLink[] = [
+    { href: "/plugins", label: "Plugins" },
+    { href: "/pricing", label: "Pricing" },
+    { href: "/faq", label: "FAQ" },
+    ...(session
+      ? [
+          { href: "/support", label: "Support" },
+          ...(session.isAdmin
+            ? [{ href: "/admin", label: "Admin", accent: true }]
+            : []),
+          { href: "/dashboard", label: "Dashboard" },
+        ]
+      : []),
+  ];
+
   return (
-    <header className="sticky top-0 z-40 border-b border-border/60 bg-background/80 backdrop-blur-md">
-      <nav className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
+    <header className="sticky top-0 z-40 border-b border-white/8 bg-background/70 backdrop-blur-xl">
+      <nav className="relative mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
         <Link href="/" className="flex items-center gap-2.5">
           <Image
             src="/logo.png"
             alt="BruLite"
-            width={36}
-            height={36}
-            className="rounded-md"
+            width={34}
+            height={34}
+            className="rounded-lg"
           />
           <span className="text-lg font-bold tracking-tight">
-            Bru<span className="text-accent">Lite</span>
+            Bru<span className="text-gradient">Lite</span>
           </span>
         </Link>
 
-        <div className="hidden items-center gap-6 md:flex">
-          {links.map((l) => (
-            <Link
-              key={l.href}
-              href={l.href}
-              className="text-sm text-muted transition-colors hover:text-foreground"
-            >
-              {l.label}
-            </Link>
-          ))}
-          {session && (
-            <>
-              <Link
-                href="/support"
-                className="text-sm text-muted transition-colors hover:text-foreground"
-              >
-                Support
-              </Link>
-              {session.isAdmin && (
-                <Link
-                  href="/admin"
-                  className="text-sm text-accent transition-colors hover:text-foreground"
-                >
-                  Admin
-                </Link>
-              )}
-              <Link
-                href="/dashboard"
-                className="text-sm text-muted transition-colors hover:text-foreground"
-              >
-                Dashboard
-              </Link>
-            </>
-          )}
+        <div className="hidden items-center gap-7 md:flex">
+          <NavLinks links={links} />
         </div>
 
         <div className="flex items-center gap-3">
@@ -73,19 +52,20 @@ export async function SiteNav() {
                 alt=""
                 width={30}
                 height={30}
-                className="rounded-full border border-border"
+                className="rounded-full ring-1 ring-white/15"
               />
               <SignOutButton />
             </div>
           ) : (
             <Link
               href="/api/auth/discord"
-              className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white shadow-lg shadow-primary/25 transition-colors hover:bg-primary-bright"
+              className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-b from-primary-bright to-primary px-4 py-2 text-sm font-medium text-white shadow-lg shadow-primary/30 transition-all hover:brightness-110 active:scale-[0.98]"
             >
               <DiscordMark className="h-4 w-4" />
-              Sign in with Discord
+              Sign in
             </Link>
           )}
+          <MobileMenu links={links} />
         </div>
       </nav>
     </header>

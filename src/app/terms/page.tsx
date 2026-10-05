@@ -9,7 +9,7 @@ export const metadata = { title: "Terms of Service" };
  */
 export default function TermsPage() {
   return (
-    <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6">
+    <div className="mx-auto max-w-3xl px-4 py-16 sm:px-6">
       <PageHeader
         title="Terms of Service"
         subtitle={`Version ${TERMS_VERSION} — last updated ${new Date().toLocaleDateString("en-GB", { month: "long", year: "numeric" })}`}

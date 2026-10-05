@@ -16,16 +16,16 @@ export function Button({
 }) {
   const styles = {
     primary:
-      "bg-primary hover:bg-primary-bright text-white shadow-lg shadow-primary/25",
+      "bg-gradient-to-b from-primary-bright to-primary text-white shadow-lg shadow-primary/30 hover:shadow-primary/50 hover:brightness-110",
     secondary:
-      "bg-surface-2 border border-border text-foreground hover:border-primary/60",
+      "bg-surface-2/80 border border-white/10 text-foreground hover:border-primary/50 hover:bg-surface-2",
     ghost: "text-muted hover:text-foreground hover:bg-surface-2",
     danger: "bg-red-600/90 hover:bg-red-500 text-white",
   }[variant];
   return (
     <button
       className={cn(
-        "inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors disabled:opacity-50 disabled:pointer-events-none cursor-pointer",
+        "inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none cursor-pointer",
         styles,
         className
       )}
@@ -36,12 +36,15 @@ export function Button({
 
 export function Card({
   className,
+  hover = false,
   ...props
-}: HTMLAttributes<HTMLDivElement>) {
+}: HTMLAttributes<HTMLDivElement> & { hover?: boolean }) {
   return (
     <div
       className={cn(
-        "rounded-xl border border-border bg-surface/80 backdrop-blur-sm p-6",
+        "rounded-xl border border-white/8 bg-surface/70 backdrop-blur-sm p-6 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]",
+        hover &&
+          "transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-lg hover:shadow-primary/10",
         className
       )}
       {...props}
@@ -68,7 +71,7 @@ export function Input({
   return (
     <input
       className={cn(
-        "w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-foreground placeholder:text-muted/60 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/60",
+        "w-full rounded-lg border border-white/10 bg-surface-2/80 px-3 py-2 text-sm text-foreground placeholder:text-muted/50 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-colors",
         className
       )}
       {...props}
@@ -83,7 +86,7 @@ export function Textarea({
   return (
     <textarea
       className={cn(
-        "w-full rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-foreground placeholder:text-muted/60 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/60 min-h-32",
+        "w-full rounded-lg border border-white/10 bg-surface-2/80 px-3 py-2 text-sm text-foreground placeholder:text-muted/50 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 min-h-32 transition-colors",
         className
       )}
       {...props}
@@ -99,7 +102,7 @@ export function Select({
   return (
     <select
       className={cn(
-        "rounded-lg border border-border bg-surface-2 px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50",
+        "rounded-lg border border-white/10 bg-surface-2/80 px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-colors",
         className
       )}
       {...props}
@@ -119,7 +122,7 @@ export function Badge({
   children: ReactNode;
 }) {
   const tones = {
-    default: "bg-surface-2 text-muted border-border",
+    default: "bg-surface-2 text-muted border-white/10",
     green: "bg-emerald-500/15 text-emerald-300 border-emerald-500/30",
     red: "bg-red-500/15 text-red-300 border-red-500/30",
     yellow: "bg-amber-500/15 text-amber-300 border-amber-500/30",
@@ -156,14 +159,32 @@ export function Label({
 export function PageHeader({
   title,
   subtitle,
+  eyebrow,
+  centered = false,
 }: {
   title: string;
   subtitle?: string;
+  eyebrow?: string;
+  centered?: boolean;
 }) {
   return (
-    <div className="mb-8">
-      <h1 className="text-3xl font-bold tracking-tight">{title}</h1>
-      {subtitle && <p className="mt-2 text-muted">{subtitle}</p>}
+    <div className={cn("mb-10", centered && "text-center")}>
+      {eyebrow && (
+        <p className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-accent">
+          {eyebrow}
+        </p>
+      )}
+      <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">{title}</h1>
+      {subtitle && (
+        <p
+          className={cn(
+            "mt-3 text-muted",
+            centered && "mx-auto max-w-xl"
+          )}
+        >
+          {subtitle}
+        </p>
+      )}
     </div>
   );
 }

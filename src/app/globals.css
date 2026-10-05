@@ -1,15 +1,16 @@
 @import "tailwindcss";
 
 :root {
-  --background: #0b0613;
-  --surface: #140b24;
-  --surface-2: #1c1032;
-  --border: #2d1b4e;
-  --foreground: #f1ecfa;
-  --muted: #9d8fc4;
+  --background: #07040d;
+  --surface: #0f0a1c;
+  --surface-2: #18102c;
+  --border: #2a1c4a;
+  --foreground: #f2eefb;
+  --muted: #9a8cc2;
   --primary: #8b5cf6;
   --primary-bright: #a855f7;
   --accent: #c084fc;
+  --glow: rgba(139, 92, 246, 0.35);
 }
 
 @theme inline {
@@ -28,8 +29,94 @@
 
 body {
   background:
-    radial-gradient(1200px 600px at 80% -10%, rgba(139, 92, 246, 0.18), transparent 60%),
-    radial-gradient(900px 500px at 10% 110%, rgba(168, 85, 247, 0.1), transparent 60%),
+    radial-gradient(1000px 500px at 50% -10%, rgba(139, 92, 246, 0.16), transparent 65%),
+    radial-gradient(800px 400px at 90% 40%, rgba(168, 85, 247, 0.07), transparent 60%),
+    radial-gradient(700px 500px at 5% 90%, rgba(139, 92, 246, 0.08), transparent 60%),
     var(--background);
+  background-attachment: fixed;
   color: var(--foreground);
+}
+
+::selection {
+  background: rgba(139, 92, 246, 0.35);
+}
+
+/* ---------- utilities ---------- */
+
+.text-gradient {
+  background: linear-gradient(100deg, var(--primary-bright), var(--accent) 60%, #e9d5ff);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Gradient hairline border — applies to a positioned element via ::before */
+.gradient-border {
+  position: relative;
+}
+.gradient-border::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(160deg, rgba(168, 85, 247, 0.55), rgba(139, 92, 246, 0.12) 45%, rgba(192, 132, 252, 0.35));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+/* Faint dotted grid backdrop for hero */
+.bg-grid {
+  background-image: radial-gradient(rgba(168, 85, 247, 0.16) 1px, transparent 1px);
+  background-size: 26px 26px;
+  mask-image: radial-gradient(ellipse 70% 60% at 50% 40%, #000 30%, transparent 75%);
+  -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 40%, #000 30%, transparent 75%);
+}
+
+/* ---------- motion ---------- */
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes aurora {
+  0%, 100% {
+    transform: translate(-4%, -2%) scale(1);
+    opacity: 0.75;
+  }
+  50% {
+    transform: translate(4%, 3%) scale(1.08);
+    opacity: 1;
+  }
+}
+
+.reveal {
+  opacity: 0;
+}
+.reveal.reveal-visible {
+  animation: fade-up 0.6s cubic-bezier(0.21, 0.6, 0.35, 1) forwards;
+}
+
+.animate-aurora {
+  animation: aurora 9s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal {
+    opacity: 1;
+  }
+  .reveal.reveal-visible,
+  .animate-aurora {
+    animation: none;
+  }
 }

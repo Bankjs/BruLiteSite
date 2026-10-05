@@ -26,10 +26,12 @@ export default async function PricingPage() {
     .orderBy(asc(prices.amountUsdCents));
 
   return (
-    <div className="mx-auto max-w-4xl px-4 py-12 sm:px-6">
+    <div className="mx-auto max-w-4xl px-4 py-16 sm:px-6">
       <PageHeader
-        title="Membership"
-        subtitle="One membership — the full client, every plugin, Discord access."
+        centered
+        eyebrow="Pricing"
+        title="One membership, everything included"
+        subtitle="The full client, every plugin, and your Discord role — monthly or yearly."
       />
       <PricingCards prices={rows} signedIn={!!session} />
       <p className="mt-8 text-center text-sm text-muted">

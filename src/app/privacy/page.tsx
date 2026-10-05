@@ -5,7 +5,7 @@ export const metadata = { title: "Privacy Policy" };
 /** ⚠️ PLACEHOLDER — review before launch. */
 export default function PrivacyPage() {
   return (
-    <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6">
+    <div className="mx-auto max-w-3xl px-4 py-16 sm:px-6">
       <PageHeader title="Privacy Policy" />
       <Card className="space-y-6 text-sm leading-relaxed text-muted">
         <section>
