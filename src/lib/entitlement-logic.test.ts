@@ -27,13 +27,14 @@ describe("decideEntitlement", () => {
     expect(decideEntitlement(sub("past_due", future), now)).toBe("active");
   });
 
-  it("canceled before period end → expired (not revoked)", () => {
-    // cancel_at_period_end honored: period ends, then it expires
-    expect(decideEntitlement(sub("canceled", past), now)).toBe("revoked");
+  it("canceled before period end → active until the period ends", () => {
+    // Stripe marks cancel-at-period-end subs as canceled with future end
+    // OR (newer API) still "active" with cancel_at set — both stay entitled.
+    expect(decideEntitlement(sub("active", future), now)).toBe("active");
   });
 
-  it("canceled after period end → revoked", () => {
-    expect(decideEntitlement(sub("canceled", past), now)).toBe("revoked");
+  it("canceled after period end → expired (normal lapse, not revoked)", () => {
+    expect(decideEntitlement(sub("canceled", past), now)).toBe("expired");
   });
 
   it("unpaid after period end → revoked", () => {

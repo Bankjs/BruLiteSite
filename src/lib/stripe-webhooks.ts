@@ -51,7 +51,11 @@ async function upsertSubscription(
     status: sub.status,
     planInterval: subInterval(sub),
     currentPeriodEnd: subPeriodEnd(sub),
-    cancelAtPeriodEnd: sub.cancel_at_period_end,
+    // Newer Stripe API sets cancel_at + canceled_at for cancel-at-period-end
+    // while cancel_at_period_end stays false — treat either as canceling.
+    cancelAtPeriodEnd:
+      sub.cancel_at_period_end ||
+      (typeof sub.cancel_at === "number" && sub.cancel_at * 1000 > Date.now()),
     updatedAt: new Date(),
   };
   await db

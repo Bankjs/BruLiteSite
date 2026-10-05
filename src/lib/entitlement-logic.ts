@@ -15,10 +15,11 @@ export type EntitlementDecision = "active" | "expired" | "revoked";
  * Given the latest subscription snapshot and current time, decide what the
  * entitlement state should be:
  * - "active": subscription in a good/limbo status AND paid period not over
- * - "revoked": subscription dead (canceled/unpaid) AND paid period over —
- *   kept distinct for audit ("was cut off" vs "simply lapsed")
- * - "expired": paid period over without a terminal Stripe status
- *   (e.g. canceled with cancel_at_period_end honored, or sub deleted)
+ * - "revoked": subscription "unpaid" (payment failed beyond recovery) — kept
+ *   distinct for audit. Refunds/chargebacks/admin actions revoke explicitly
+ *   via revokeEntitlement(), not through this function.
+ * - "expired": paid period over without renewal — includes normal
+ *   cancel-at-period-end lapses and deleted subscriptions.
  */
 export function decideEntitlement(
   sub: SubSnapshot | null,
@@ -27,8 +28,7 @@ export function decideEntitlement(
   if (!sub) return "expired";
   const paidPeriodOver = sub.currentPeriodEnd <= now;
   if (ACTIVE_SUB_STATUSES.has(sub.status) && !paidPeriodOver) return "active";
-  if (["canceled", "unpaid"].includes(sub.status) && paidPeriodOver)
-    return "revoked";
+  if (sub.status === "unpaid" && paidPeriodOver) return "revoked";
   return "expired";
 }
 
