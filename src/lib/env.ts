@@ -20,7 +20,10 @@ export const env = {
     return req("AUTH_SECRET");
   },
   get APP_URL() {
-    return opt("NEXT_PUBLIC_APP_URL", "http://localhost:3000").replace(/\/$/, "");
+    return opt("NEXT_PUBLIC_APP_URL", "http://localhost:3000").replace(
+      /\/$/,
+      "",
+    );
   },
   get DISCORD_CLIENT_ID() {
     return req("DISCORD_CLIENT_ID");
@@ -74,5 +77,9 @@ export const env = {
   /** Returns the site base URL; needed when building absolute URLs server-side. */
   get TERMS_VERSION() {
     return opt("TERMS_VERSION", "1");
+  },
+  /** Oldest BruLite client version still entitled; empty = no floor. */
+  get MIN_CLIENT_VERSION() {
+    return opt("MIN_CLIENT_VERSION");
   },
 };

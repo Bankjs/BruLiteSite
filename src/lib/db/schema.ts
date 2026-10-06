@@ -18,11 +18,13 @@ export const users = pgTable(
     username: text("username").notNull(),
     avatar: text("avatar"),
     email: text("email"),
+    /** Max simultaneously bound client devices (admin-adjustable seat limit). */
+    deviceLimit: integer("device_limit").notNull().default(2),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
   },
-  (t) => [uniqueIndex("users_discord_id_idx").on(t.discordId)]
+  (t) => [uniqueIndex("users_discord_id_idx").on(t.discordId)],
 );
 
 export const products = pgTable("products", {
@@ -79,7 +81,7 @@ export const subscriptions = pgTable(
     uniqueIndex("subscriptions_stripe_sub_idx").on(t.stripeSubscriptionId),
     index("subscriptions_user_idx").on(t.userId),
     index("subscriptions_customer_idx").on(t.stripeCustomerId),
-  ]
+  ],
 );
 
 /**
@@ -103,7 +105,7 @@ export const entitlements = pgTable(
     revokedAt: timestamp("revoked_at", { withTimezone: true }),
     reason: text("reason"),
   },
-  (t) => [index("entitlements_user_idx").on(t.userId)]
+  (t) => [index("entitlements_user_idx").on(t.userId)],
 );
 
 export const termsAcceptances = pgTable(
@@ -119,7 +121,7 @@ export const termsAcceptances = pgTable(
       .defaultNow(),
     ip: text("ip"),
   },
-  (t) => [index("terms_user_idx").on(t.userId)]
+  (t) => [index("terms_user_idx").on(t.userId)],
 );
 
 /** Opaque API tokens issued to the desktop client (stored sha256-hashed). */
@@ -132,6 +134,14 @@ export const licenseTokens = pgTable(
       .references(() => users.id, { onDelete: "cascade" }),
     tokenHash: text("token_hash").notNull(),
     label: text("label").notNull().default("client"),
+    /**
+     * Device seat binding — a sha256 fingerprint of the machine's hardware ID,
+     * claimed on the first client API call that carries X-Device-Id.
+     * Seat-management identifier, not a cryptographic credential.
+     */
+    deviceFingerprint: text("device_fingerprint"),
+    deviceName: text("device_name"),
+    boundAt: timestamp("bound_at", { withTimezone: true }),
     expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
     lastUsedAt: timestamp("last_used_at", { withTimezone: true }),
     revokedAt: timestamp("revoked_at", { withTimezone: true }),
@@ -142,7 +152,7 @@ export const licenseTokens = pgTable(
   (t) => [
     uniqueIndex("license_tokens_hash_idx").on(t.tokenHash),
     index("license_tokens_user_idx").on(t.userId),
-  ]
+  ],
 );
 
 /** Short-lived codes linking a desktop client to a browser auth session. */
@@ -162,7 +172,7 @@ export const clientPairings = pgTable(
       .defaultNow(),
     expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
   },
-  (t) => [index("client_pairings_status_idx").on(t.status)]
+  (t) => [index("client_pairings_status_idx").on(t.status)],
 );
 
 export const plugins = pgTable("plugins", {
@@ -204,7 +214,7 @@ export const tickets = pgTable(
       .notNull()
       .defaultNow(),
   },
-  (t) => [index("tickets_user_idx").on(t.userId)]
+  (t) => [index("tickets_user_idx").on(t.userId)],
 );
 
 /** Downloadable client builds uploaded by admins to Vercel Blob. */
@@ -232,5 +242,5 @@ export const auditLog = pgTable(
       .notNull()
       .defaultNow(),
   },
-  (t) => [index("audit_log_created_idx").on(t.createdAt)]
+  (t) => [index("audit_log_created_idx").on(t.createdAt)],
 );

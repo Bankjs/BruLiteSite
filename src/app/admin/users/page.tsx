@@ -3,6 +3,7 @@ import { db } from "@/lib/db/client";
 import { entitlements, subscriptions, users } from "@/lib/db/schema";
 import { Badge, Card, PageHeader } from "@/components/ui";
 import { EntitlementActions } from "@/components/user-actions";
+import { UserDevicesPanel } from "@/components/user-devices-panel";
 import { avatarUrl } from "@/lib/auth";
 
 export const metadata = { title: "Users" };
@@ -28,13 +29,13 @@ export default async function AdminUsersPage({
     .from(users)
     .leftJoin(
       entitlements,
-      and(eq(entitlements.userId, users.id), eq(entitlements.status, "active"))
+      and(eq(entitlements.userId, users.id), eq(entitlements.status, "active")),
     )
     .leftJoin(subscriptions, eq(subscriptions.userId, users.id))
     .where(
       query
         ? or(ilike(users.username, query), ilike(users.discordId, query))
-        : undefined
+        : undefined,
     )
     .orderBy(desc(users.createdAt))
     .limit(100);
@@ -89,6 +90,9 @@ export default async function AdminUsersPage({
                       <Badge>no access</Badge>
                     )}
                     <EntitlementActions userId={u.id} entitled={activeEnt} />
+                  </div>
+                  <div className="w-full">
+                    <UserDevicesPanel userId={u.id} />
                   </div>
                 </li>
               );

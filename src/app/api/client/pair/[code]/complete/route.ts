@@ -3,10 +3,8 @@ import { and, eq, gt } from "drizzle-orm";
 import { db } from "@/lib/db/client";
 import { clientPairings, licenseTokens } from "@/lib/db/schema";
 import { getSession } from "@/lib/auth";
-import { generateToken, hashToken } from "@/lib/tokens";
+import { CLIENT_TOKEN_TTL_MS, generateToken, hashToken } from "@/lib/tokens";
 import { rateLimit } from "@/lib/rate-limit";
-
-const TOKEN_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 
 /**
  * POST /api/client/pair/{code}/complete — called by the browser (authed
@@ -15,7 +13,7 @@ const TOKEN_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
  */
 export async function POST(
   req: Request,
-  { params }: { params: Promise<{ code: string }> }
+  { params }: { params: Promise<{ code: string }> },
 ) {
   const session = await getSession();
   if (!session) {
@@ -35,8 +33,8 @@ export async function POST(
       and(
         eq(clientPairings.code, code),
         eq(clientPairings.status, "pending"),
-        gt(clientPairings.expiresAt, new Date())
-      )
+        gt(clientPairings.expiresAt, new Date()),
+      ),
     )
     .limit(1);
 
@@ -51,7 +49,7 @@ export async function POST(
       userId: session.userId,
       tokenHash: hashToken(rawToken),
       label: "client",
-      expiresAt: new Date(Date.now() + TOKEN_TTL_MS),
+      expiresAt: new Date(Date.now() + CLIENT_TOKEN_TTL_MS),
     })
     .returning({ id: licenseTokens.id });
 

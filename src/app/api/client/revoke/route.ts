@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { db } from "@/lib/db/client";
-import { licenseTokens } from "@/lib/db/schema";
+import { auditLog, licenseTokens } from "@/lib/db/schema";
 import { getSession } from "@/lib/auth";
 import { hashToken } from "@/lib/tokens";
 
@@ -28,7 +28,18 @@ export async function POST(req: Request) {
     await db
       .update(licenseTokens)
       .set({ revokedAt: new Date() })
-      .where(eq(licenseTokens.id, tokenId));
+      .where(
+        and(
+          eq(licenseTokens.id, tokenId),
+          eq(licenseTokens.userId, session.userId),
+        ),
+      );
+    await db.insert(auditLog).values({
+      actorUserId: session.userId,
+      action: "token.revoked",
+      target: tokenId,
+      meta: { via: "dashboard" },
+    });
     return NextResponse.json({ ok: true });
   }
 
@@ -38,6 +49,12 @@ export async function POST(req: Request) {
       .update(licenseTokens)
       .set({ revokedAt: new Date() })
       .where(eq(licenseTokens.tokenHash, hashToken(token)));
+    await db.insert(auditLog).values({
+      actorUserId: session?.userId ?? null,
+      action: "token.revoked",
+      target: "self",
+      meta: { via: "client" },
+    });
     return NextResponse.json({ ok: true });
   }
 
