@@ -221,6 +221,10 @@ export const tickets = pgTable(
 export const releases = pgTable("releases", {
   id: uuid("id").primaryKey().defaultRandom(),
   version: text("version").notNull(),
+  /** windows-x64 | macos-arm64 | universal — which OS build this artifact is. */
+  platform: text("platform").notNull().default("universal"),
+  /** bundle (installer zip) | jar (bare jar for in-app auto-update). */
+  artifactType: text("artifact_type").notNull().default("bundle"),
   blobUrl: text("blob_url").notNull(),
   blobPathname: text("blob_pathname").notNull(),
   fileName: text("file_name").notNull(),

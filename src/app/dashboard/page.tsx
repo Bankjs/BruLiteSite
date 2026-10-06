@@ -34,41 +34,55 @@ export default async function DashboardPage({
   if (!session) redirect("/auth/signin?next=/dashboard");
   const { checkout } = await searchParams;
 
-  const [ent, [sub], tokens, myTickets, [latestRelease], [me]] =
-    await Promise.all([
-      getEntitlementStatus(session.userId),
-      db
-        .select()
-        .from(subscriptions)
-        .where(eq(subscriptions.userId, session.userId))
-        .orderBy(desc(subscriptions.currentPeriodEnd))
-        .limit(1),
-      db
-        .select()
-        .from(licenseTokens)
-        .where(
-          and(
-            eq(licenseTokens.userId, session.userId),
-            isNull(licenseTokens.revokedAt),
-          ),
-        )
-        .orderBy(desc(licenseTokens.createdAt)),
-      db
-        .select()
-        .from(tickets)
-        .where(eq(tickets.userId, session.userId))
-        .orderBy(desc(tickets.createdAt))
-        .limit(5),
-      db.select().from(releases).orderBy(desc(releases.createdAt)).limit(1),
-      db
-        .select({ deviceLimit: users.deviceLimit })
-        .from(users)
-        .where(eq(users.id, session.userId))
-        .limit(1),
-    ]);
+  const [ent, [sub], tokens, myTickets, releaseRows, [me]] = await Promise.all([
+    getEntitlementStatus(session.userId),
+    db
+      .select()
+      .from(subscriptions)
+      .where(eq(subscriptions.userId, session.userId))
+      .orderBy(desc(subscriptions.currentPeriodEnd))
+      .limit(1),
+    db
+      .select()
+      .from(licenseTokens)
+      .where(
+        and(
+          eq(licenseTokens.userId, session.userId),
+          isNull(licenseTokens.revokedAt),
+        ),
+      )
+      .orderBy(desc(licenseTokens.createdAt)),
+    db
+      .select()
+      .from(tickets)
+      .where(eq(tickets.userId, session.userId))
+      .orderBy(desc(tickets.createdAt))
+      .limit(5),
+    db
+      .select()
+      .from(releases)
+      .where(eq(releases.artifactType, "bundle"))
+      .orderBy(desc(releases.createdAt))
+      .limit(10),
+    db
+      .select({ deviceLimit: users.deviceLimit })
+      .from(users)
+      .where(eq(users.id, session.userId))
+      .limit(1),
+  ]);
 
   const boundDevices = tokens.filter((t) => t.deviceFingerprint).length;
   const deviceLimit = me?.deviceLimit ?? 2;
+
+  // Latest bundle per platform (universal counts for everything).
+  const latestByPlatform = new Map<string, (typeof releaseRows)[number]>();
+  for (const r of releaseRows) {
+    if (!latestByPlatform.has(r.platform)) latestByPlatform.set(r.platform, r);
+  }
+  const winRelease =
+    latestByPlatform.get("windows-x64") ?? latestByPlatform.get("universal");
+  const macRelease =
+    latestByPlatform.get("macos-arm64") ?? latestByPlatform.get("universal");
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-12 sm:px-6">
@@ -144,21 +158,31 @@ export default async function DashboardPage({
         <Card>
           <CardTitle>Client download</CardTitle>
           {ent.entitled ? (
-            latestRelease ? (
+            winRelease || macRelease ? (
               <>
                 <p className="text-sm text-muted">
-                  Latest build:{" "}
-                  <span className="text-foreground">
-                    v{latestRelease.version}
-                  </span>{" "}
-                  ({latestRelease.fileName})
+                  Latest builds — pick your platform:
                 </p>
-                <a
-                  href="/api/download/client"
-                  className="mt-5 inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-bright"
-                >
-                  <Download className="h-4 w-4" /> Download BruLite
-                </a>
+                <div className="mt-5 flex flex-wrap gap-3">
+                  {winRelease && (
+                    <a
+                      href="/api/download/client?platform=windows-x64"
+                      className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-bright"
+                    >
+                      <Download className="h-4 w-4" /> Windows (v
+                      {winRelease.version})
+                    </a>
+                  )}
+                  {macRelease && (
+                    <a
+                      href="/api/download/client?platform=macos-arm64"
+                      className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-bright"
+                    >
+                      <Download className="h-4 w-4" /> macOS Apple Silicon (v
+                      {macRelease.version})
+                    </a>
+                  )}
+                </div>
               </>
             ) : (
               <p className="text-sm text-muted">

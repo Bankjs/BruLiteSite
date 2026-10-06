@@ -7,6 +7,8 @@ import { useRouter } from "next/navigation";
 export interface ReleaseRow {
   id: string;
   version: string;
+  platform: string;
+  artifactType: string;
   fileName: string;
   notes: string | null;
   createdAt: string | Date;
@@ -16,6 +18,8 @@ export function ReleaseManager({ releases }: { releases: ReleaseRow[] }) {
   const router = useRouter();
   const fileRef = useRef<HTMLInputElement>(null);
   const [version, setVersion] = useState("");
+  const [platform, setPlatform] = useState("windows-x64");
+  const [artifactType, setArtifactType] = useState("bundle");
   const [notes, setNotes] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -33,6 +37,8 @@ export function ReleaseManager({ releases }: { releases: ReleaseRow[] }) {
       const form = new FormData();
       form.append("file", file);
       form.append("version", version);
+      form.append("platform", platform);
+      form.append("artifactType", artifactType);
       if (notes) form.append("notes", notes);
       const res = await fetch("/api/admin/releases", {
         method: "POST",
@@ -51,7 +57,12 @@ export function ReleaseManager({ releases }: { releases: ReleaseRow[] }) {
   }
 
   async function remove(id: string) {
-    if (!confirm("Delete this release? Users will no longer be able to download it.")) return;
+    if (
+      !confirm(
+        "Delete this release? Users will no longer be able to download it.",
+      )
+    )
+      return;
     await fetch(`/api/admin/releases?id=${id}`, { method: "DELETE" });
     router.refresh();
   }
@@ -61,8 +72,8 @@ export function ReleaseManager({ releases }: { releases: ReleaseRow[] }) {
       <Card>
         <h2 className="mb-2 font-semibold">Upload a build</h2>
         <p className="mb-4 text-xs text-muted">
-          Stored privately — downloadable only by members via the dashboard.
-          The newest upload is the one served.
+          Stored privately — downloadable only by members via the dashboard. The
+          newest upload is the one served.
         </p>
         <form onSubmit={upload} className="space-y-4">
           <div>
@@ -73,6 +84,31 @@ export function ReleaseManager({ releases }: { releases: ReleaseRow[] }) {
               placeholder="1.0.0"
               required
             />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label>Platform</Label>
+              <select
+                value={platform}
+                onChange={(e) => setPlatform(e.target.value)}
+                className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground"
+              >
+                <option value="windows-x64">Windows x64</option>
+                <option value="macos-arm64">macOS Apple Silicon</option>
+                <option value="universal">Universal</option>
+              </select>
+            </div>
+            <div>
+              <Label>Artifact type</Label>
+              <select
+                value={artifactType}
+                onChange={(e) => setArtifactType(e.target.value)}
+                className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground"
+              >
+                <option value="bundle">Bundle (installer zip)</option>
+                <option value="jar">Jar (auto-update)</option>
+              </select>
+            </div>
           </div>
           <div>
             <Label>File (installer / jar / zip)</Label>
@@ -105,10 +141,15 @@ export function ReleaseManager({ releases }: { releases: ReleaseRow[] }) {
           </Card>
         )}
         {releases.map((r, i) => (
-          <Card key={r.id} className="flex items-start justify-between gap-4 py-4">
+          <Card
+            key={r.id}
+            className="flex items-start justify-between gap-4 py-4"
+          >
             <div className="min-w-0">
               <div className="flex items-center gap-2">
                 <span className="font-medium">v{r.version}</span>
+                <Badge>{r.platform}</Badge>
+                <Badge>{r.artifactType}</Badge>
                 {i === 0 && <Badge tone="green">latest</Badge>}
               </div>
               <p className="mt-1 text-xs text-muted">

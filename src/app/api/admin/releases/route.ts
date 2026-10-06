@@ -37,23 +37,42 @@ export async function POST(req: Request) {
   const file = form?.get("file");
   const version = form?.get("version");
   const notes = form?.get("notes");
+  const platform = form?.get("platform");
+  const artifactType = form?.get("artifactType");
 
   if (!(file instanceof File) || typeof version !== "string" || !version) {
     return NextResponse.json(
       { error: "file_and_version_required" },
-      { status: 400 }
+      { status: 400 },
     );
   }
   if (file.size > MAX_SIZE) {
     return NextResponse.json({ error: "too_large" }, { status: 413 });
   }
 
-  const blob = await uploadFile(`releases/${version}/${file.name}`, file, "private");
+  const validPlatforms = ["windows-x64", "macos-arm64", "universal"];
+  const validTypes = ["bundle", "jar"];
+  const platformVal = typeof platform === "string" ? platform : "universal";
+  const typeVal = typeof artifactType === "string" ? artifactType : "bundle";
+  if (!validPlatforms.includes(platformVal) || !validTypes.includes(typeVal)) {
+    return NextResponse.json(
+      { error: "invalid_platform_or_type" },
+      { status: 400 },
+    );
+  }
+
+  const blob = await uploadFile(
+    `releases/${version}/${file.name}`,
+    file,
+    "private",
+  );
 
   const [release] = await db
     .insert(releases)
     .values({
       version,
+      platform: platformVal,
+      artifactType: typeVal,
       blobUrl: blob.url,
       blobPathname: blob.pathname,
       fileName: file.name,
@@ -65,7 +84,12 @@ export async function POST(req: Request) {
     actorUserId: session.userId,
     action: "release.uploaded",
     target: release.id,
-    meta: { version, fileName: file.name },
+    meta: {
+      version,
+      fileName: file.name,
+      platform: platformVal,
+      artifactType: typeVal,
+    },
   });
 
   return NextResponse.json({ release }, { status: 201 });
@@ -89,7 +113,7 @@ export async function DELETE(req: Request) {
 
   if (release) {
     await deleteFile(release.blobUrl).catch((e) =>
-      console.error("blob delete failed", e)
+      console.error("blob delete failed", e),
     );
   }
   return NextResponse.json({ ok: true });

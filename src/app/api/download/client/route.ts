@@ -1,16 +1,16 @@
 import { NextResponse } from "next/server";
-import { desc } from "drizzle-orm";
+import { and, desc, eq, inArray } from "drizzle-orm";
 import { db } from "@/lib/db/client";
 import { releases } from "@/lib/db/schema";
 import { getSession } from "@/lib/auth";
 import { getEntitlementStatus } from "@/lib/entitlements";
 
 /**
- * GET /api/download/client — entitlement-gated download of the latest
- * BruLite client build. Streams the private blob through the server so the
- * storage URL is never exposed.
+ * GET /api/download/client?platform=windows-x64 — entitlement-gated download
+ * of the latest BruLite client bundle for the given platform. Streams the
+ * private blob through the server so the storage URL is never exposed.
  */
-export async function GET() {
+export async function GET(req: Request) {
   const session = await getSession();
   if (!session) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
@@ -21,9 +21,16 @@ export async function GET() {
     return NextResponse.json({ error: "not_entitled" }, { status: 403 });
   }
 
+  const platform = new URL(req.url).searchParams.get("platform");
+  const conditions = [eq(releases.artifactType, "bundle")];
+  if (platform) {
+    conditions.push(inArray(releases.platform, [platform, "universal"]));
+  }
+
   const [release] = await db
     .select()
     .from(releases)
+    .where(and(...conditions))
     .orderBy(desc(releases.createdAt))
     .limit(1);
 
